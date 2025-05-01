@@ -3,16 +3,13 @@ import tiktoken
 import streamlit as st
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from langchain_openai import ChatOpenAI
+from langchain_openai import ChatOpenAI, AzureChatOpenAI
 from langchain_anthropic import ChatAnthropic
 from langchain_google_genai import ChatGoogleGenerativeAI
 from datetime import datetime
 import os
 import pandas as pd
 from io import BytesIO, StringIO
-
-# Azure OpenAI 用のクライアントをインポート
-from langchain_openai import AzureChatOpenAI
 
 # .envファイルを使って秘密情報を読み込む（ローカルで開発する場合用）
 try:
@@ -100,7 +97,106 @@ def select_model():
             openai_api_key=os.getenv("AZURE_OPENAI_API_KEY")
         )
 
-# 以下の関数は変更ありません（省略）
+# チャット用の連携処理をまとめたchainを生成
+def init_chain():
+    st.session_state.llm = select_model()
+    prompt = ChatPromptTemplate.from_messages([
+        *((entry["Role"], entry["Message"]) for entry in st.session_state.message_history),
+        ("user", "{user_input}")
+    ])
+    output_parser = StrOutputParser()
+    return prompt | st.session_state.llm | output_parser
+
+# トークン数の計算関数
+def get_message_counts(text):
+    if "gemini" in st.session_state.model_name:
+        return st.session_state.llm.get_num_tokens(text)
+    else:
+        try:
+            encoding = tiktoken.encoding_for_model(st.session_state.model_name)
+        except:
+            encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
+        return len(encoding.encode(text))
+
+# 利用したトークン数からAPI料金を計算する関数
+def calc_and_display_costs():
+    output_count = 0
+    input_count = 0
+    for entry in st.session_state.message_history:
+        tokens = get_message_counts(entry["Message"])
+        if entry["Role"] == "ai":
+            output_count += tokens
+        else:
+            input_count += tokens
+
+    if len(st.session_state.message_history) == 1:
+        return
+
+    input_cost = MODEL_PRICES["input"].get(st.session_state.model_name, 0) * input_count
+    output_cost = MODEL_PRICES["output"].get(st.session_state.model_name, 0) * output_count
+
+    if "gemini" in st.session_state.model_name and (input_count + output_count) > 128_000:
+        input_cost *= 2
+        output_cost *= 2
+
+    total_cost = input_cost + output_cost
+    st.sidebar.markdown("## 💰 Usage Cost")
+    st.sidebar.markdown(f"**Total cost: ${total_cost:.5f}**")
+    st.sidebar.markdown(f"- Input: ${input_cost:.5f}")
+    st.sidebar.markdown(f"- Output: ${output_cost:.5f}")
+
+# アプリのメイン部分
+def main():
+    init_page()
+    init_messages()
+    chain = init_chain()
+
+    for entry in st.session_state.message_history:
+        st.chat_message(entry["Role"]).markdown(entry["Message"])
+
+    if user_input := st.chat_input("聞きたいことを入力してね！"):
+        now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        st.chat_message("user").markdown(user_input)
+        st.session_state.message_history.append({
+            "Role": "user",
+            "User": st.session_state.user_name,
+            "Timestamp": now,
+            "Message": user_input
+        })
+        with st.chat_message("ai"):
+            response = st.write_stream(chain.stream({"user_input": user_input}))
+        st.session_state.message_history.append({
+            "Role": "ai",
+            "User": "assistant",
+            "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "Message": response
+        })
+
+    calc_and_display_costs()
+
+    # Excel保存
+    if st.sidebar.button("Save Conversation as Excel"):
+        df = pd.DataFrame(st.session_state.message_history)
+        excel_buffer = BytesIO()
+        df.to_excel(excel_buffer, index=False, engine='openpyxl')
+        st.sidebar.download_button(
+            label="📅 Download Excel",
+            data=excel_buffer.getvalue(),
+            file_name=f"chat_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+
+    # CSV保存
+    if st.sidebar.button("Save Conversation as CSV"):
+        df = pd.DataFrame(st.session_state.message_history)
+        csv_buffer = StringIO()
+        df.to_csv(csv_buffer, index=False)
+        st.sidebar.download_button(
+            label="📄 Download CSV",
+            data=csv_buffer.getvalue(),
+            file_name=f"chat_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+            mime="text/csv"
+        )
 
 # アプリ起動
 if __name__ == "__main__":
