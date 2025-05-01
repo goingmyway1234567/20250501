@@ -37,8 +37,12 @@ if user_input:
         output_parser = StrOutputParser()
 
         # temperatureごとに応答を生成・表示
-        for temperature in [0, 0.5, 1]: #0ほど一貫性のある，2ほど一貫性のない（壊れる）
-            llm = ChatOpenAI(temperature=temperature, openai_api_key=api_key)
+        for temperature in [0, 0.5, 1]:  # 0ほど一貫性あり，1に近づくほど創造的になる
+            llm = ChatOpenAI(
+                model="gpt-3.5-turbo",         # ★ 修正: モデル名を明示
+                temperature=temperature,
+                api_key=api_key                # ★ 修正: openai_api_key → api_key
+            )
             chain = prompt | llm | output_parser
             response = chain.invoke({"user_input": user_input})
 
