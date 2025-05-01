@@ -26,14 +26,14 @@ MODEL_PRICES = {
         "gpt-4o": 5 / 1_000_000,
         "claude-3-5-sonnet-20240620": 3 / 1_000_000,
         "gemini-1.5-pro-latest": 3.5 / 1_000_000,
-        "azure-gpt": 0  # Azureの料金は未設定なので0で定義（必要に応じて変更）
+        "azure-gpt": 5 / 1_000_000
     },
     "output": {
         "gpt-3.5-turbo": 1.5 / 1_000_000,
         "gpt-4o": 15 / 1_000_000,
         "claude-3-5-sonnet-20240620": 15 / 1_000_000,
         "gemini-1.5-pro-latest": 10.5 / 1_000_000,
-        "azure-gpt": 0
+        "azure-gpt": 15 / 1_000_000
     }
 }
 
@@ -147,6 +147,32 @@ def calc_and_display_costs():
     st.sidebar.markdown(f"- Input: ${input_cost:.5f}")
     st.sidebar.markdown(f"- Output: ${output_cost:.5f}")
 
+# 要約とフィードバック関数（LLMによる実行）
+def summarize_conversation():
+    from langchain_core.prompts import PromptTemplate
+
+    history_text = "\n".join(
+        f"{m['Role']}({m['User']}): {m['Message']}" for m in st.session_state.message_history if m['Role'] != 'system'
+    )
+    summarize_prompt = PromptTemplate.from_template(
+        """
+        以下はある学習者とAIの会話履歴です。
+
+        {conversation}
+
+        この会話内容を200字以内で要約し、学習の特徴や意欲を踏まえてフィードバックしてください。
+
+        ## 出力形式：
+        - 💡要約：
+        - 🗣フィードバック：
+        """
+    )
+    summarize_chain = summarize_prompt | st.session_state.llm | StrOutputParser()
+    result = summarize_chain.invoke({"conversation": history_text})
+
+    st.subheader("🔚 会話のまとめとフィードバック")
+    st.markdown(result)
+
 # アプリのメイン部分
 def main():
     init_page()
@@ -198,5 +224,10 @@ def main():
             mime="text/csv"
         )
 
+    # 会話終了ボタン（要約とフィードバック）
+    if st.sidebar.button("🚪 会話を終了して要約とフィードバック"):
+        summarize_conversation()
+
+# アプリ起動
 if __name__ == "__main__":
     main()
