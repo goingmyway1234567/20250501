@@ -1,16 +1,17 @@
 streamlit==1.35.0
-openai==1.10.0
 python-dotenv==1.0.1
 
-langchain==0.1.20
-langchain-core==0.1.46
-langchain-openai==0.1.7
-langchain-community>=0.2.9
+openai==1.10.0
 
-# Claude（Anthropic）用
+langchain==0.1.21
+langchain-core==0.1.46
+langchain-openai==0.1.8
+langchain-community==0.2.10  # Dependabot対応済み
+
+# Claude用（使わないなら削除可）
 anthropic==0.25.7
 langchain-anthropic==0.1.11
 
-# Gemini（Google Generative AI）用
+# Gemini用（使わないなら削除可）
 google-generativeai==0.5.2
 langchain-google-genai==0.0.9
