@@ -52,23 +52,28 @@ def select_model(temperature=0):
     if model == "GPT-3.5":
         return ChatOpenAI(
             temperature=temperature,
-            model_name="gpt-3.5-turbo"
+            model_name="gpt-3.5-turbo",
+            openai_api_key=st.secrets["OPENAI_API_KEY"]
         )
     elif model == "GPT-4":
         return ChatOpenAI(
             temperature=temperature,
-            model_name="gpt-4o"
+            model_name="gpt-4o",
+            openai_api_key=st.secrets["OPENAI_API_KEY"]
         )
     elif model == "Claude 3.5 Sonnet":
         return ChatAnthropic(
             temperature=temperature,
-            model_name="claude-3-5-sonnet-20240620"
+            model_name="claude-3-5-sonnet-20240620",
+            anthropic_api_key=st.secrets["ANTHROPIC_API_KEY"]
         )
     elif model == "Gemini 1.5 Pro":
         return ChatGoogleGenerativeAI(
             temperature=temperature,
-            model="gemini-1.5-pro-latest"
+            model="gemini-1.5-pro-latest",
+            google_api_key=st.secrets["GOOGLE_API_KEY"]
         )
+
 
 
 def init_chain():
