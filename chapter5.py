@@ -6,8 +6,7 @@ from langchain_core.output_parsers import StrOutputParser
 
 # モデルを読み込む（OpenAI、Anthropic、Google）
 from langchain_openai import ChatOpenAI
-from langchain_anthropic import ChatAnthropic
-from langchain_google_genai import ChatGoogleGenerativeAI
+
 
 import requests
 from bs4 import BeautifulSoup
@@ -61,16 +60,7 @@ def select_model(temperature=0):
             model_name="gpt-4o",
             openai_api_key=os.getenv("OPENAI_API_KEY")
         )
-    elif model == "Claude 3.5 Sonnet":
-        return ChatAnthropic(
-            temperature=temperature,
-            model_name="claude-3-5-sonnet-20240620"
-        )
-    elif model == "Gemini 1.5 Pro":
-        return ChatGoogleGenerativeAI(
-            temperature=temperature,
-            model="gemini-1.5-pro-latest"
-        )
+
 
 # チェーン初期化
 
