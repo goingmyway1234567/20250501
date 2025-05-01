@@ -65,15 +65,15 @@ def select_model():
         st.session_state.model_name = "gpt-3.5-turbo"
         return ChatOpenAI(
             temperature=temperature,
-            model_name=st.session_state.model_name,
-            openai_api_key=os.getenv("OPENAI_API_KEY")  # 明示的に指定
+            model=st.session_state.model_name,
+            api_key=os.getenv("OPENAI_API_KEY")
         )
     elif model == "GPT-4":
         st.session_state.model_name = "gpt-4o"
         return ChatOpenAI(
             temperature=temperature,
-            model_name=st.session_state.model_name,
-            openai_api_key=os.getenv("OPENAI_API_KEY")
+            model=st.session_state.model_name,
+            api_key=os.getenv("OPENAI_API_KEY")
         )
     elif model == "Claude 3.5 Sonnet":
         st.session_state.model_name = "claude-3-5-sonnet-20240620"
@@ -137,7 +137,6 @@ def calc_and_display_costs():
     st.sidebar.markdown(f"- Output: ${output_cost:.5f}")
 
 # アプリのメイン部分
-
 def main():
     init_page()
     init_messages()
