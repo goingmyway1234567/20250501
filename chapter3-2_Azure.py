@@ -25,13 +25,15 @@ MODEL_PRICES = {
         "gpt-3.5-turbo": 0.5 / 1_000_000,
         "gpt-4o": 5 / 1_000_000,
         "claude-3-5-sonnet-20240620": 3 / 1_000_000,
-        "gemini-1.5-pro-latest": 3.5 / 1_000_000
+        "gemini-1.5-pro-latest": 3.5 / 1_000_000,
+        "azure-gpt": 0  # Azureの料金は未設定なので0で定義（必要に応じて変更）
     },
     "output": {
         "gpt-3.5-turbo": 1.5 / 1_000_000,
         "gpt-4o": 15 / 1_000_000,
         "claude-3-5-sonnet-20240620": 15 / 1_000_000,
-        "gemini-1.5-pro-latest": 10.5 / 1_000_000
+        "gemini-1.5-pro-latest": 10.5 / 1_000_000,
+        "azure-gpt": 0
     }
 }
 
@@ -88,13 +90,13 @@ def select_model():
             model=st.session_state.model_name
         )
     elif model == "Azure OpenAI":
-        st.session_state.model_name = "azure-openai"
+        st.session_state.model_name = "azure-gpt"
         return AzureChatOpenAI(
             temperature=temperature,
             deployment_name=os.getenv("AZURE_DEPLOYMENT_NAME"),
-            openai_api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
-            openai_api_base=os.getenv("AZURE_OPENAI_API_BASE"),
-            openai_api_key=os.getenv("AZURE_OPENAI_API_KEY")
+            api_version=os.getenv("AZURE_OPENAI_API_VERSION"),
+            azure_endpoint=os.getenv("AZURE_OPENAI_API_BASE"),
+            api_key=os.getenv("AZURE_OPENAI_API_KEY")
         )
 
 # チャット用の連携処理をまとめたchainを生成
@@ -174,7 +176,6 @@ def main():
 
     calc_and_display_costs()
 
-    # Excel保存
     if st.sidebar.button("Save Conversation as Excel"):
         df = pd.DataFrame(st.session_state.message_history)
         excel_buffer = BytesIO()
@@ -186,7 +187,6 @@ def main():
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
 
-    # CSV保存
     if st.sidebar.button("Save Conversation as CSV"):
         df = pd.DataFrame(st.session_state.message_history)
         csv_buffer = StringIO()
@@ -198,6 +198,5 @@ def main():
             mime="text/csv"
         )
 
-# アプリ起動
 if __name__ == "__main__":
     main()
